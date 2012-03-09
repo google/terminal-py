@@ -181,7 +181,7 @@ def LineWrap(text, omit_sgr=False):
   text_multiline = []
   for text_line in text.splitlines():
     # Is this a line that needs splitting?
-    while ((omit_sgr and len(StripAnsiText(text_line)) > width) or
+    while ((omit_sgr and (len(StripAnsiText(text_line)) > width)) or
            (len(text_line) > width)):
       # If there are no sgr escape characters then do a straight split.
       if not omit_sgr:
@@ -193,23 +193,30 @@ def LineWrap(text, omit_sgr=False):
         text_line_list = []
         line_length = 0
         for (index, token) in enumerate(token_list):
+          # Skip null tokens.
+          if token == '':
+            continue
+
           if sgr_re.match(token):
             # Add sgr escape sequences without splitting or counting length.
             text_line_list.append(token)
+            text_line = ''.join(token_list[index +1:])
           else:
             if line_length + len(token) <= width:
               # Token fits in line and we count it towards overall length.
               text_line_list.append(token)
               line_length += len(token)
+              text_line = ''.join(token_list[index +1:])
             else:
               # line splits part way through this token.
               # So split the token, form the new line and carry the remainder.
               text_line_list.append(token[:width - line_length])
-              text_multiline.append(''.join(text_line_list))
               text_line = token[width - line_length:]
               text_line += ''.join(token_list[index +1:])
               break
-    text_multiline.append(text_line)
+        text_multiline.append(''.join(text_line_list))
+    if text_line != '':
+      text_multiline.append(text_line)
   return '\n'.join(text_multiline)
 
 

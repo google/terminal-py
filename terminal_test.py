@@ -100,6 +100,15 @@ class TerminalTest(unittest.TestCase):
     text7 = 'e line \033[5;32;44mthat\033[0m\n is too lon\ng with ansi'
     self.failUnlessEqual(text7, terminal.LineWrap(text6, True))
 
+  def testIssue1(self):
+    self.failUnlessEqual(10, len(terminal.StripAnsiText('boembabies' + '\033[0m')))
+    terminal.TerminalSize = lambda: (10, 10)
+    text1 = terminal.LineWrap('\033[32m' + 'boembabies, ' * 10 + 'boembabies' +
+                             '\033[0m', omit_sgr=True)
+    text2 = ('\033[32m' +
+             terminal.LineWrap('boembabies, ' * 10 + 'boembabies') +
+             '\033[0m')
+    self.failUnlessEqual(text1, text2)
 
 class FakeTerminal(object):
   def __init__(self):
