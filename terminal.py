@@ -119,7 +119,7 @@ def _AnsiCmd(command_list):
   for sgr in command_list:
     if sgr.lower() not in SGR:
       raise ValueError('Invalid or unsupported SGR name: %s' % sgr)
-  # Convert to numerical strings
+  # Convert to numerical strings.
   command_str = [str(SGR[x.lower()]) for x in command_list]
   # Wrap values in Ansi escape sequence (CSI prefix & SGR suffix).
   return '\033[%sm' % (';'.join(command_str))
@@ -163,7 +163,6 @@ def TerminalSize():
       length_width = (24, 80)
   return length_width
 
-
 def LineWrap(text, omit_sgr=False):
   """Break line to fit screen width, factoring in ANSI/SGR escape sequences.
 
@@ -174,6 +173,37 @@ def LineWrap(text, omit_sgr=False):
   Returns:
     Text with additional line wraps inserted for lines grater than the width.
   """
+
+  def _SplitWithSgr(text_line):
+    """Tokenise the line so that the sgr sequences can be omitted."""
+    token_list = sgr_re.split(text_line)
+    text_line_list = []
+    line_length = 0
+    for (index, token) in enumerate(token_list):
+      # Skip null tokens.
+      if token == '':
+        continue
+
+      if sgr_re.match(token):
+        # Add sgr escape sequences without splitting or counting length.
+        text_line_list.append(token)
+        text_line = ''.join(token_list[index +1:])
+      else:
+        if line_length + len(token) <= width:
+          # Token fits in line and we count it towards overall length.
+          text_line_list.append(token)
+          line_length += len(token)
+          text_line = ''.join(token_list[index +1:])
+        else:
+          # Line splits part way through this token.
+          # So split the token, form a new line and carry the remainder.
+          text_line_list.append(token[:width - line_length])
+          text_line = token[width - line_length:]
+          text_line += ''.join(token_list[index +1:])
+          break
+
+    return (''.join(text_line_list), text_line)
+
   # We don't use textwrap library here as it insists on removing
   # trailing/leading whitespace (pre 2.6).
   (_, width) = TerminalSize()
@@ -188,33 +218,8 @@ def LineWrap(text, omit_sgr=False):
         text_multiline.append(text_line[:width])
         text_line = text_line[width:]
       else:
-        # Tokenise the line so that the sgr sequences can be omitted.
-        token_list = sgr_re.split(text_line)
-        text_line_list = []
-        line_length = 0
-        for (index, token) in enumerate(token_list):
-          # Skip null tokens.
-          if token == '':
-            continue
-
-          if sgr_re.match(token):
-            # Add sgr escape sequences without splitting or counting length.
-            text_line_list.append(token)
-            text_line = ''.join(token_list[index +1:])
-          else:
-            if line_length + len(token) <= width:
-              # Token fits in line and we count it towards overall length.
-              text_line_list.append(token)
-              line_length += len(token)
-              text_line = ''.join(token_list[index +1:])
-            else:
-              # line splits part way through this token.
-              # So split the token, form the new line and carry the remainder.
-              text_line_list.append(token[:width - line_length])
-              text_line = token[width - line_length:]
-              text_line += ''.join(token_list[index +1:])
-              break
-        text_multiline.append(''.join(text_line_list))
+        (multiline_line, text_line) = _SplitWithSgr(text_line)
+        text_multiline.append(multiline_line)
     if text_line != '':
       text_multiline.append(text_line)
   return '\n'.join(text_multiline)
@@ -223,23 +228,23 @@ def LineWrap(text, omit_sgr=False):
 class Pager(object):
   """A simple text pager module.
 
-  Supports paging of text on a terminal, somewhat like a
-  simple 'more' or 'less', but in pure Python.
+  Supports paging of text on a terminal, somewhat like a simple 'more' or
+  'less', but in pure Python.
 
   The simplest usage:
 
     s = open('file.txt').read()
     Pager(s).Page()
 
-  Particularly unique is the ability to sequentially feed
-  new text into the pager:
+  Particularly unique is the ability to sequentially feed new text into the
+  pager:
 
     p = Pager()
     for line in socket.read():
       p.Page(line)
 
-  If done this way, the Page() method will block until either
-  the line has been displayed, or the user has quit the pager.
+  If done this way, the Page() method will block until either the line has been
+  displayed, or the user has quit the pager.
 
   Currently supported keybindings are:
     <enter> - one line down
@@ -299,11 +304,10 @@ class Pager(object):
   def Page(self, text=None, show_percent=None):
     """Page text.
 
-    Continues to page through any text supplied in the
-    constructor. Also, any text supplied to this method will
-    be appended to the total text to be displayed.
-    The method returns when all available text has been displayed
-    to the user, or the user quits the pager.
+    Continues to page through any text supplied in the constructor. Also, any
+    text supplied to this method will be appended to the total text to be
+    displayed. The method returns when all available text has been displayed to
+    the user, or the user quits the pager.
 
     Args:
       text: A string, extra text to be paged.
@@ -323,7 +327,7 @@ class Pager(object):
 
     text = LineWrap(self._text).splitlines()
     while True:
-      # Get a list of new lines to display
+      # Get a list of new lines to display.
       self._newlines = text[self._displayed:self._displayed+self._lines_to_show]
       for line in self._newlines:
         sys.stdout.write(line + '\n')
@@ -334,19 +338,19 @@ class Pager(object):
       if self._currentpagelines >= self._lines_to_show:
         self._currentpagelines = 0
         wish = self._AskUser()
-        if wish == 'q':  # quit pager
+        if wish == 'q':         # Quit pager.
           return False
-        elif wish == 'g':  # display till the end
+        elif wish == 'g':       # Display till the end.
           self._Scroll(len(text) - self._displayed + 1)
-        elif wish == '\r':  # enter, down a line
+        elif wish == '\r':      #  Enter, down a line.
           self._Scroll(1)
-        elif wish == '\033[B':  # down arrow, down a line
+        elif wish == '\033[B':  # Down arrow, down a line.
           self._Scroll(1)
-        elif wish == '\033[A':  # up arrow, up a line
+        elif wish == '\033[A':  # Up arrow, up a line.
           self._Scroll(-1)
-        elif wish == 'b':  # up a page
+        elif wish == 'b':       # Up a page.
           self._Scroll(0 - self._cli_lines)
-        else:  # next page
+        else:                   # Next page.
           self._Scroll()
       if self._displayed >= len(text):
         break
