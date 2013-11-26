@@ -57,6 +57,13 @@ class TerminalTest(unittest.TestCase):
     ansi_text = '\033[5;32;44mansi\033[0m length'
     self.failUnlessEqual(text, terminal.StripAnsiText(ansi_text))
 
+  def testEncloseAnsi(self):
+    text = 'ansi length'
+    self.failUnlessEqual(text, terminal.EncloseAnsiText(text))
+    ansi_text = '\033[5;32;44mansi\033[0m length'
+    ansi_enclosed = '\001\033[5;32;44m\002ansi\001\033[0m\002 length'
+    self.failUnlessEqual(ansi_enclosed, terminal.EncloseAnsiText(ansi_text))
+
   def testTerminalSize(self):
     def StubOpen(args, *kwargs):
       raise IOError

@@ -88,7 +88,15 @@ BG_COLOR_WORDS = {'black': ['bg_black'],
                   'light_blue': ['bg_cyan'],
                   'grey': ['bg_white']}
 
-sgr_re = re.compile('(\\033\[\d+(?:;\d+)*m)')
+
+# Characters inserted at the start and end of ANSI strings
+# to provide hinting for readline and other clients.
+ANSI_START = '\001'
+ANSI_END = '\002'
+
+
+sgr_re = re.compile('(%s?\\033\[\d+(?:;\d+)*m%s?)' % (
+    ANSI_START, ANSI_END))
 
 
 class Error(Exception):
@@ -147,6 +155,11 @@ def AnsiText(text, command_list=None, reset=True):
 def StripAnsiText(text):
   """Strip ANSI/SGR escape sequences from text."""
   return sgr_re.sub('', text)
+
+
+def EncloseAnsiText(text):
+  """Enclose ANSI/SGR escape sequences with ANSI_START and ANSI_END."""
+  return sgr_re.sub(lambda x: ANSI_START + x.group(1) + ANSI_END, text)
 
 
 def TerminalSize():
