@@ -165,9 +165,9 @@ def EncloseAnsiText(text):
 def TerminalSize():
   """Returns terminal length and width as a tuple."""
   try:
-    length_width = struct.unpack(
-        'hh', fcntl.ioctl(os.open(os.ctermid(), os.O_RDONLY),
-                          termios.TIOCGWINSZ, '1234'))
+    with open(os.ctermid(), 'r') as tty:
+      length_width = struct.unpack(
+          'hh', fcntl.ioctl(tty.fileno(), termios.TIOCGWINSZ, '1234'))
   except (IOError, OSError):
     try:
       length_width = (int(os.environ['LINES']),

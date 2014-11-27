@@ -67,7 +67,7 @@ class TerminalTest(unittest.TestCase):
   def testTerminalSize(self):
     def StubOpen(args, *kwargs):
       raise IOError
-    terminal.os.open = StubOpen
+    terminal.open = StubOpen
     terminal.os.environ = {}
     # Raise exceptions on ioctl and environ and assign a default.
     self.failUnlessEqual((24, 80), terminal.TerminalSize())
