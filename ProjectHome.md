@@ -1,0 +1,1 @@
+Routines the determine window size, color text, split rows and page through output.
